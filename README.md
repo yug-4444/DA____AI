@@ -1,1 +1,3 @@
-data structure artificial intelligence
+[data structure;
+ artificial intelligence;
+ genral apptitude]
