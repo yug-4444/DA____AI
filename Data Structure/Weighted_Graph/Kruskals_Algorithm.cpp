@@ -1,7 +1,7 @@
 #include<iostream>
 #include<vector>
 #include<queue>
-#include<algorithum>
+#include<algorithm>
 using namespace std;
 class DUS{
     private:
@@ -42,7 +42,7 @@ class DUS{
 struct e{
     int u,v,w;
 };
-class Kruskal{
+class Kruskal{//valid only undirected graph
     private:
     const vector<vector<pair<int,int>>>&adjList;
     int vertex;
@@ -58,7 +58,7 @@ class Kruskal{
             for(int j=0;j<adjList[u].size();j++){
                 int v=adjList[u][j].first;
                 int w=adjList[u][j].second;
-                edges.push_back({u,v,w});
+                if(u<v) edges.push_back({u,v,w});
             }
         }
         sort(edges.begin(),edges.end(),[](const e&a,const e&b){

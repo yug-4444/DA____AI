@@ -2,7 +2,7 @@
 #include<vector>
 #include<queue>
 using namespace std;
-class Prims{
+class Prims{//valid only for undirected graph
     //growth stratergy and always remain connected
     private:
     const vector<vector<pair<int,int>>>&adjList;

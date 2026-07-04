@@ -26,9 +26,7 @@ class MultiSourceWar{
         for(int k=0;k<vertex;k++){
             for(int i=0;i<vertex;i++){
                 for(int j=0;j<vertex;j++){
-                    if(i==j){
-                        continue;
-                    }
+                    //can't skip i==j as in negitive edge case things might change
                     //i->k and k->j 
                     if(adjMatrix[i][k]!=INT_MAX&&adjMatrix[k][j]!=INT_MAX&&adjMatrix[i][k]+adjMatrix[k][j]<adjMatrix[i][j]){
                         adjMatrix[i][j]=adjMatrix[i][k]+adjMatrix[k][j];
