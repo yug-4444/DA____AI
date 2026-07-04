@@ -13,6 +13,14 @@
 #SVD
 #PseudoInverse
 #rank compresssion
+#Symmetric positive definite for hessian matrix identification
+#Cholesky decomposition and its use in linerar regression
+#projection matrix and find projected shadow
+#L_p,L_1,L_2,L_infinity norms
+#Gram-Schmidt Orthogonalization
+#QR Algorithum to find eigenvalues and linaer regression
+
+#Untwist bowls
 
 import numpy as np
 class LinearSystem:
@@ -844,4 +852,380 @@ class MatrixAnalyzer:
         print("frobenius norm error is :",norm_error,".\n")
         return{'U_comp':U_mxk,'S_comp':S_kxk,'V_T_comp':V_T_kxn}
     
-    def
+    def simple_symmetric_positive_definate(self):
+        #upawrd curved bowl 
+        #it means that ant vector that drops on this landscape it has the potential to reach minimal point
+        #when ever a vector is transformed then transformed angle is not largerr than 90 degrees 
+        #x nx1 and Ax nxn nx1 nx1 so (x^T)(Ax)>0 i.e it means ||x|| ||Ax|| cosQ so depend on cosQ if cosQ>0 then up 
+        #as well if all eigenvalues are L_i>0 
+        #if all pinciple mirors >0 d1,d2,....,dn
+        if self.m!=self.n or not np.allclose(self.a,self.a.transpose()):
+            return False
+        n=self.m
+        #lets use eigrnvalue methord
+        #1*L^N+C_1*L^(N-1)...............+C_0=0
+        c=np.zeros(n+1)
+        M=self.a.copy()
+        c[0]=1.0
+        c[1]=-sum(M[i,i] for i in range(n))
+        for k in range(2,n+1):
+            M=np.dot(self.a,M+c[k-1]*np.eye(n))
+            c[k]=-sum(M[i,i] for i in range(n))/k
+        poly_coff=list(c)
+        eigen_values=np.roots(poly_coff)
+        if min(eigen_values)<=0:
+            return False
+        return True
+    
+    def cholesky_decomposition(self):
+        #A=LL^T ONLY WHEN OUR A IS SPD symmetric positive definate
+        #in LU decomposition of A
+        #A=LU -> A=LDU where diagnol of both L&U are 1 as for D it holds expnsions along the axes since A is symmetric U=L^T s they skew towards each other by same angle
+        #A=LDL^T= (LD_r)(D_rL^T) ->D=(D_r)^r and for diagnol matrix D=D^T
+        #A=(LD_r)(LD_r)^T ====> L_cho=LD_r
+        if self.m!=self.n or not np.allclose(self.a,self.a.transpose()):
+            print("VALID ONLY FOR SYMETRIC MATRIX\n")
+            return False
+        n=self.m
+        U=self.a.copy().astype(float)
+        D=np.zeros((n,n),dtype=float)
+        #no row swaps will be needed as if row swapp needed it itself shows that zero pic=vot is there as well as row swap while maintaining symmertic means that in end only diagnol elements are swapped
+        #SPD det=product of eigrnvalues since L is a lower tri matrix then all pivots along diagnol so if any diagnol is zero or less than 0 the fail
+        for i in range(n):
+            if np.isclose(U[i,i],0) or U[i,i]<0:
+                return False
+            D[i,i]=U[i,i]
+            U[i,:]/=U[i,i]
+            for j in range(i+1,n,1):
+                factor=U[j,i]
+                U[j,:]-=U[i,:]*factor
+        D_r=D.copy()
+        for i in range(n):
+            D_r[i,i]=D_r[i,i]**(1/2)#D[i,i] won't be -ve since it reached this step
+        L=np.array(np.dot(U.transpose(),D_r))
+        residual =np.dot(L,L.transpose())-self.a
+        if not np.allclose(residual,0):
+            return False
+        return {'L':L}
+    
+    def optimized_symmetric_positive_definate(self):#O(N^4)->O(N^3) timecomplexity differ from simple methord
+        obj=self.cholesky_decomposition()
+        if obj==False:
+            print("NOT SPD\n")
+            return False
+        else:
+            print("VALID SPD\n")
+            return True
+        
+    def SPD_cholesky_decomposition(self,M):#M as SPD
+        a=np.array(M,dtype=float)
+        n=a.shape[0]
+        U=a.copy().astype(float)
+        D=np.zeros((n,n),dtype=float)
+        for i in range(n):
+            #since a is surely a SPD no need to check as we will definatly get valid pivots
+            D[i,i]=U[i,i]
+            U[i,:]/=U[i,i]
+            for j in range(i+1,n,1):
+                factor=U[j,i]
+                U[j,:]-=U[i,:]*factor
+        D_r=D.copy()
+        for i in range(n):
+            D_r[i,i]=D_r[i,i]**(1/2)#D[i,i] won't be -ve since it reached this step
+        L=np.array(np.dot(U.transpose(),D_r))
+        return {'L':L}
+    
+    def liner_regression_cholesky(self):
+        #Ax=b ->A can be a rec, singular, non-sigulaar any in real world 
+        #so to solve it A^TAx=A^Tb now A'=A^TA which will surely be a SPD as x^TA'x=x^TA^TAx=(Ax)^T(Ax) ->let Ax=v ->v^Tv=||v||^2>=0 and v=0 only when Ax=0 i.e A=0 i.e columns of a are dependent
+        #columns of A should be independent so for wide A directly invalid for square and tall valid 
+        #A^TA is SPD so if apply chlesky we get LL^T where L is lower triangle so now we can apply backsub and forward sub now instead to finding inverse and then multiplying matrixes again it saves time
+        m=self.m
+        n=self.n
+        if self.n>self.m:#as no. of pivots will definatly be less so will become dependent columns
+            return None
+        #check for linear independence
+        check=self.a.copy()
+        pivots=0
+        curr_row=0
+        for col in range(n):
+            if curr_row>=m:
+                break
+            pivot_row=curr_row+np.argmax(abs(check[curr_row:,col]))
+            check[[curr_row,pivot_row],:]=check[[pivot_row,curr_row],:]
+            if np.isclose(check[curr_row,col],0):
+                print("Linerly dependent columns !!!!!!!")
+                return None
+            for j in range(curr_row+1,m,1):
+                factor=check[j,col]/check[curr_row,col]
+                check[j,:]-=check[curr_row,:]*factor
+            curr_row+=1
+        #A^TAx=A^Tb->Mx=B 
+        M=np.dot(self.a.transpose(),self.a)#nxm mxn =nxn
+        B=np.dot(self.a.transpose(),self.b)
+        obj=self.SPD_cholesky_decomposition(M)
+        L=np.array(obj['L'])# nxn
+        #LL^Tx=B now we apply ->L^Tx=y Ly=B ->forward substitution
+        x=np.zeros(n)
+        y=np.zeros(n)
+        y[0]=B[0]/L[0,0]
+        for i in range(1,n):
+            y[i]=(B[i]-np.dot(L[i,:i],y[:i]))/L[i,i]#no diagnol element will ever be zero
+        #L^Tx=y
+        L_T=L.transpose()
+        #backsub
+        for i in range(n-1,-1,-1):
+            x[i]=(y[i]-np.dot(L_T[i,i+1:],x[i+1:]))/L_T[i,i]
+        residual=np.dot(self.a,x)-self.b
+        if not np.allclose(residual,0):
+            print("calculation error!!!!!!!!\n")
+            return None
+        print("Result verified!!!!!!!!\n")
+        return {'x':x}
+    
+    def Projection_Matrix_solve_projected_shadow(self,b):
+        # when we want to solve Ax=b but is unreachable then we project our object over matrix p=Ag  mxn nx1->mx1
+        #error=e=b-p  mx1
+        #error will be perpendicular to plane which is A as a result orthogonal projrction in which light source is cast directly from above
+        #A^Te=0->A^T(b-Ag)->A^Tb-A^TAg=0->A^TAg=A^Tb->g=(A^TA)_invA^T->Ag=p=A(A^TA)_invA^Tb
+        #Projection matrix is P=A(A^TA)_invA^T so p=Pb
+        #orthogonal->P^2=P and P^T=P 
+        #>P^2=P it makes sure that we can't take shadow of the shadow itself i.e shadow remains there itself
+        #P^T=P ensures that 90 degrees by p^Te=(Pb)^T(b-Pb)=b^T(P^Tb-P^TPb) =0 only when P^T=P 
+        #p=A(A^TA)_invA^Tb  b->mx1  nxm mx1 ->nx1  ->nxn nx1 ->nx1 ->mxn nx1 ->mx1 . so, A^TA is SPD so also inverse possible as det!= 0 and square matrix
+        n=self.n
+        A_=np.dot(self.a.transpose(),self.a)
+        I=np.eye(n)
+        aug=np.hstack((A_,I)).astype(float)
+        for i in range(n):
+            pivot_i=i+np.argmax(abs(aug[i:,i]))
+            aug[[i,pivot_i],:]=aug[[pivot_i,i],:]
+            if np.isclose(aug[i,i],0):
+                print("A^TA Singular matrix . projection impossible")#I have redundant columns! I cannot be inverted!
+                return None
+            aug[i,:]/=aug[i,i]
+            for j in range(i+1,n,1):
+                factor=aug[j,i]
+                aug[j,:]-=aug[i,:]*factor
+        for i in range(n-1,-1,-1):
+            for j in range(i-1,-1,-1):
+                factor=aug[j,i]
+                aug[j,i:]-=aug[i,i:]*factor
+        inv=aug[:,n:]
+        P=np.dot(self.a,np.dot(inv,self.a.transpose()))
+        p=np.dot(P,b)
+        return{'p':p}
+
+    def L1_manhatan_norm(self,v):
+        x=np.array(v,dtype=float).flatten()#so that wheater input is 2d or 1d .... don't matter
+        #||x||p =(sum((|x_i|)^p))^(1/p)
+        n=x.shape[0]
+        x_1=np.sum(np.abs(x))
+        return x_1
+    
+    def L2_ecludian_norm(self,v):
+        x=np.array(v,dtype=float).flatten()
+        #||x||p =(sum((|x_i|)^p))^(1/p)
+        n=x.shape[0]
+        x_2=np.sqrt(np.sum(x**2))
+        return x_2
+    
+    def L_infinity_norm(self,v):
+        x=np.array(v,dtype=float).flatten()
+        #||x||p =(sum((|x_i|)^p))^(1/p)
+        n=x.shape[0]
+        x_inf=np.max(np.abs(x))
+        return x_inf
+    
+    def Gram_Shmidt_Othogalization(self):
+        #A=[v1,v2,v3,v4......,vn]  v_i->mx1 order  we want to untangle these messy direction and make these basis set such that they each are othogonal to each other such that we get [u1,u2,u3,.....,un] set of basis 
+        #to straingten them we have to remove the shadows they project other settled basis and continueing till all n basis are covered then we normalize each base so that they re orthonormal
+        #P=U(U^TU)_invU^T and p=Pv_i   we project v_i on u_i since order mx1 P------>U^TU->1x1 scalar->inv->scalar so scalar U(U^Tv_i)->scalar*U
+
+        #confirm if they form basis i.e are linear independent columns
+        m=self.m
+        n=self.n
+        if n>m:
+            print("These don't form basis for space/subspace\n")
+            return None
+        a=self.a.copy().astype(float)
+        for i in range(n):
+            pivot_i=i+np.argmax(abs(a[i:,i]))
+            a[[i,pivot_i],:]=a[[pivot_i,i],:]
+            if np.isclose(a[i,i],0):
+                print("These don't form basis for space/subspace\n")
+                return None
+            a[i,:]/=a[i,i]
+            for j in range(i+1,m,1):
+                factor=a[j,i]
+                a[j,:]-=a[i,:]*factor
+        #if reached here then col form bases as columns are independent dirn of subspace nxn
+        V=self.a.copy()
+        U=np.zeros((m,n),dtype=float)
+        for curr in range(n):
+            v=V[:,curr]
+            u=v.copy()#create new space through copy else become reference
+            for prev in range(curr):
+                u_prev=U[:,prev]
+                scalar=np.dot(u_prev,v)#as ||u_orev||=1
+                p=scalar*u_prev
+                u-=p
+            length=np.sqrt(np.sum(u**2))
+            u/=length
+            U[:,curr]=u
+        return {'U_orthonormal_basis':U}
+    
+    def QR_Algorithm(self,M):
+        #A=QR where Q is orthogonal using gram shmidt and our R is recipie upper triangle
+        #mxn then mxn nxn
+        A=np.array(M).astype(float)
+        a=A.copy().astype(float)
+        m,n=a.shape
+        if n>m:
+            return None
+        Q=np.zeros((m,n),dtype=float)
+        R=np.zeros((n,n),dtype=float)
+        for curr in range(n):
+            v=a[:,curr]
+            u=v.copy()
+            for prev in range(curr):
+                u_pro=Q[:,prev]
+                scale=np.dot(u_pro,v)
+                p=scale*u_pro
+                u-=p
+                R[prev,curr]=scale
+            length=np.sqrt(np.sum(u**2))
+            if np.isclose(length,0):
+                return None
+            u/=length
+            R[curr,curr]=length
+            Q[:,curr]=u
+        residual=np.dot(Q,R)-A
+        if not np.allclose(residual,0,atol=1e-8):
+            print("Calculation error")
+            return None
+        return {'Q':Q,'R':R}
+    
+    def eigenvalue_QR_ALgorithum(self,max_iter=100):
+        #A_i=Q_iR_i where R is upper traingle and Q is orthogonormal set Q^TQ=I and  A_(i+1)=R_iQ_i
+        #whenver simplified trnsofomation R_iQ_i=Q^T_iA_iQ_i ,Q^T=Q_inv as well as Q^T_iA_i(QQ^T)v_i=Q^T_iLv_i->(Q^TAQ)(Q^Tv)=L(Q^Tv) ->A_transY=LY
+        #we do these step till A becomes a upper triangle agter so our eigen values remain same that hung on diagnol directly as if we do |A-LI|=0 now we find that the eigenvalues all equal to diagnol values
+        #A will be nxn 
+        n=self.m
+        A_i=self.a.copy().astype(float)
+        for _ in range(max_iter):
+            check=np.tril(A_i,-1)
+            if np.allclose(check,0):
+                break 
+            obj=self.QR_Algorithm(A_i)
+            Q_i=np.array(obj['Q']).astype(float)
+            R_i=np.array(obj['R']).astype(float)
+            A_i=np.dot(R_i,Q_i)
+        #eigen value can be zero
+        eigen_values=[A_i[i,i] for i in range(n)]
+        return {'eigen_values':eigen_values}
+    
+    def Linear_Regression_QR_Algorithum(self):
+        #Ax=b ->A=QR ->QRx=b Q^TQ=I ->Rx=Q^Tb  best version as there will be numerical stability as well if we do A^TAx=A^Tb ->LL^Tx=b in this A^TA there may be numerical instability
+        #mxn nx1 =mx1
+        m=self.m
+        n=self.n
+        if n>m:
+            print("No. Variable greater than equation\n")
+            return None
+        A=self.a
+        obj=self.QR_Algorithm(A)
+        Q=np.array(obj['Q']).astype(float)
+        R=np.array(obj['R']).astype(float)
+        Q_T=Q.transpose()
+        x=np.zeros(n)
+        B=np.dot(Q_T,self.b)
+        #Rx=B where R is upper triangle so back substitution
+        for i in range(n-1,-1,-1):
+                x[i]=(B[i]-np.dot(R[i,i+1:],x[i+1:]))/R[i,i]
+        return {'x':x}
+
+    def Quadratic_Form(self):
+        #A will be nxn x=[x1,x2] AND f(x)=x^TAx when 
+        #A is symmetric and diagnol matrix then only bowl shape maintained if A is  symmetric and nondiagnol matrix then there will be strech along differnt dirn which twists bowl
+        #M=(M+M^T)/2+(M-M^T)/2=sym+skew=S+k
+        #x^TMx=x^T(s)x+x^T(k)x AND skew->K^T=-K q=x^Tkx then q sclar q=q^T and q^T=x^Tk^Tx=-x^Tkx=-q so q=-q when q=0
+        #x^Mx=x^T(M')x and M'=(M+M^T)/2 now we convert M' into diagnoanlize PDP_inv and since M' is sym then P_inv=P^T where D holds eigenvalue  when we compare L_i to see orientation of bowl
+        n=self.n
+        if self.m!=self.n:
+            S=np.dot(self.a.transpose(),self.a)#symmetri
+        else:
+            M=self.a.copy().astype(float)
+            S=(M+M.transpose())/2 #symmetric
+        #lets find eigenvalues 
+        #QR algorithum as symmetric due to spectral therom we will definatly get vaild eigenvalues
+        A_i=S.copy().astype(float)
+        for _ in range(100):
+            check=np.tril(A_i,-1)
+            if np.allclose(check,0):
+                break
+            obj=self.QR_Algorithm(A_i)
+            Q_i=np.array(obj['Q']).astype(float)
+            R_i=np.array(obj['R']).astype(float)
+            A_i=np.dot(R_i,Q_i)
+        eigen_value=[A_i[i,i] for i in range(n)]
+        max_eig=max(eigen_value)
+        min_eig=min(eigen_value)
+        eigen_vector=[]
+        unique_eigen=np.unique(eigen_value)
+        for L in unique_eigen:
+            #|A-LI|=0 AND (A-LI)x=0
+            a=S.copy().astype(float)-L*np.eye(n)
+            b=np.zeros(n)
+            #ax=b
+            pivot_pair=[]
+            curr_row=0
+            for col in range(n):
+                if curr_row>=n:
+                    break
+                pivot_row=curr_row+np.argmax(abs(a[curr_row:,col]))
+                a[[curr_row,pivot_row],:]=a[[pivot_row,curr_row],:]
+                if np.isclose(a[curr_row,col],0):
+                    continue
+                a[curr_row,:]/=a[curr_row,col]
+                pivot_pair.append((curr_row,col))
+                for j in range(curr_row+1,n,1):
+                    factor=a[j,col]
+                    a[j,:]-=a[curr_row,:]*factor
+                curr_row+=1
+            pivot_columns=[col for row,col in pivot_pair]
+            free_variables=[i for i in range(n) if i not in pivot_columns]
+            for free_var in free_variables:
+                x=np.zeros(n).astype(float)
+                x[free_var]=1.0#all other free var automatically zero
+                for row,col in reversed(pivot_pair):
+                    x[col]=-np.dot(a[row,col+1:],x[col+1:])
+                length=sum(x[i]**2 for i in range(n))**(1/2)
+                v=x/length#normalized
+                is_dup=False
+                for e_vec in eigen_vector:
+                    #ince its symmetric matrix then eigenvectors will be orthonormal
+                    cosQ=np.dot(e_vec,v)
+                    if np.isclose(abs(cosQ),1):
+                        is_dup=True
+                        break
+                if not is_dup:
+                    eigen_vector.append(v)
+        P=np.empty((n,0))
+        for v in eigen_vector:
+            P=np.hstack((P,np.array(v).reshape(-1,1)))
+        #symmetric matrix eigrnvectors are orthogonal to each other spectral or gram-shmidt   
+        Up=False
+        Down=False  
+        saddle=False    
+        if not np.isclose(min_eig,0) and min_eig>0:
+            Up=True
+            print("UPWARD BOWL and positive definate after we move axes along eigenvectors P\n")
+        elif not np.isclose(max_eig,0) and max_eig<0:
+            Down=True
+            print("DOWNWARD BOWL and negative definate after we move axes along eigenvectors P\n")
+        else:
+            saddle=True
+            print("INDEFINATE SHAPE")
+        return{'P':P,"Upward":Up,'Downward':Down,'Saddle_Point':saddle}
+        
