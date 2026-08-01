@@ -6,6 +6,7 @@
 //but now a new problem arrises that is we can crerly see multiple points will have same index then what
 //then the solution is to make array of pointer rather than int so that it may act a starting point to head of a individual link list
 
+//SEPERATE CHAINING 
 #include<iostream>
 #include<climits>
 #include <cmath>
