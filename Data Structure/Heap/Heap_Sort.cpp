@@ -18,7 +18,7 @@ class Heap_Sort{//space-time compramise
             max_heapify(array,heap_size,largest);
         }
     }
-    void build_max_heap(vector<int>&array,int heap_size){
+    void build_max_heap(vector<int>&array,int heap_size){//takes O(n)time*********************************************************************
         //last non-leaf node as posn n/2-1
         for(int i=heap_size/2-1;i>=0;i--){
             max_heapify(array,heap_size,i);
@@ -43,7 +43,7 @@ class Heap_Sort{//space-time compramise
             min_heapify(array,heap_size,smallest);
         }
     }
-    void build_min_heap(vector<int>&array,int heap_size){
+    void build_min_heap(vector<int>&array,int heap_size){//takes O(n)time*********************************************************************
         for(int i=heap_size/2-1;i>=0;i--){
              min_heapify(array,heap_size,i);
         }
