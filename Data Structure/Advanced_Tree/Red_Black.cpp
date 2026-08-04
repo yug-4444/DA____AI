@@ -13,7 +13,7 @@ struct node{
 };
 class RBT{
     private:
-    node*nil;
+    node*nil;//use a sentinal node
     public:
     RBT(){
         nil=new node();
