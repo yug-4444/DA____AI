@@ -62,4 +62,4 @@ class Lazy_Segment_Tree{
         if(start>=L&&end<=R)return tree[i];
         return range_query(lc,start,mid,L,R)+range_query(rc,mid+1,end,L,R);
     }
-};
+};//O(logn)both query and update even when we have to update like from index 10 to 90 add 5 to each now takes O(log n)time
