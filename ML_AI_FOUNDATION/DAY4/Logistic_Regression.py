@@ -14,7 +14,7 @@ class logistic_regression:#binary classification y= 0 or 1 case
     def sigmoid(self,z):
         #y->actual whuch is 1 or 0
         #y'=h(x)=sigmoid(B.T X)=sigmoid(z)=1/(1+e^(-z))
-        z=np.clip(z,-500,500)
+        z=np.clip(z,-700,700)
         return 1/(1+np.exp(-z))
     
     def cross_entropy(self,y_pred):
