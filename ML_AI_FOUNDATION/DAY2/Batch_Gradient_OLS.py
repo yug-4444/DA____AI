@@ -1,41 +1,5 @@
 import numpy as np
 from sklearn.linear_model import LinearRegression
-X_raw=np.array([[1.0],
-                [2.0],
-                [3.0],
-                [4.0]])#4samples and 1 feature
-y=np.array([[3.0],
-            [5.0],
-            [7.0],
-            [9.0]])
-m=X_raw.shape[0]
-n=X_raw.shape[1]
-d=n+1
-col_1=np.ones((m,1))
-X=np.c_[col_1,X_raw]
-#hyperparametes and initalization
-beta=np.zeros((d,1))
-alpha=0.1
-iterations=500
-#J(B)=1/2m(XB-Y)T (XB-Y)=1/2m eT e
-#delta J(B)=1/m XT (XB-Y)=1/m XT e =1/mXTXB-1/mXTY=HB-1/mXTY
-#delta_2 J(B)=H=hessian curvature matrix=1/m XT X
-
-for step in range(iterations):
-    #y_pred=XB=b0*1+b1*x1.....
-    y_pred=X@beta
-    # #error=e=y_pred-y_actual
-    error=y_pred-y
-    gradient=1/m*(X.T)@error
-    beta=beta-alpha*gradient
-print(f"GD intercept->beta_0 :{float(beta[0,0]):.4f}\n")
-print(f"GD slope->beta_1 :{float(beta[1,0]):.4f}")
-print("now lets see using buildin function")
-model=LinearRegression().fit(X_raw,y)
-np.testing.assert_almost_equal(float(beta[0,0]),float(model.intercept_[0]),decimal=3)
-np.testing.assert_almost_equal(float(beta[1,0]),float(model.coef_[0,0]),decimal=3)
-print("\nSuccess: Your Batch Gradient Descent converged to the exact OLS parameters!")
-
 #-------------------------------lets make a general class-----------------------------------------------------------------
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------
 class Batch_GD_OLS:
@@ -107,6 +71,43 @@ class Batch_GD_OLS:
 #   to avoid repeated expensive line-search computations.
 #----------------------------------------------------------------------------------------------------------------------------
 #----------------------------example------------------------------
+X_raw=np.array([[1.0],
+                [2.0],
+                [3.0],
+                [4.0]])#4samples and 1 feature
+y=np.array([[3.0],
+            [5.0],
+            [7.0],
+            [9.0]])
+m=X_raw.shape[0]
+n=X_raw.shape[1]
+d=n+1
+col_1=np.ones((m,1))
+X=np.c_[col_1,X_raw]
+#hyperparametes and initalization
+beta=np.zeros((d,1))
+alpha=0.1
+iterations=500
+#J(B)=1/2m(XB-Y)T (XB-Y)=1/2m eT e
+#delta J(B)=1/m XT (XB-Y)=1/m XT e =1/mXTXB-1/mXTY=HB-1/mXTY
+#delta_2 J(B)=H=hessian curvature matrix=1/m XT X
+
+for step in range(iterations):
+    #y_pred=XB=b0*1+b1*x1.....
+    y_pred=X@beta
+    # #error=e=y_pred-y_actual
+    error=y_pred-y
+    gradient=1/m*(X.T)@error
+    beta=beta-alpha*gradient
+print(f"GD intercept->beta_0 :{float(beta[0,0]):.4f}\n")
+print(f"GD slope->beta_1 :{float(beta[1,0]):.4f}")
+print("now lets see using buildin function")
+model=LinearRegression().fit(X_raw,y)
+np.testing.assert_almost_equal(float(beta[0,0]),float(model.intercept_[0]),decimal=3)
+np.testing.assert_almost_equal(float(beta[1,0]),float(model.coef_[0,0]),decimal=3)
+print("\nSuccess: Your Batch Gradient Descent converged to the exact OLS parameters!")
+
+
 print("lets check clas for a example\n")
 X = np.array([
     [1, 2, 1],
