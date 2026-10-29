@@ -1,42 +1,6 @@
 #ordinary least square <==> LINEAR REGRESSION
 import numpy as np
 from sklearn.linear_model import LinearRegression
-
-#raw data
-x=np.array([[1],
-            [2],
-            [3]])
-y=np.array([[2],
-            [3],
-            [6]])
-#beta=[b0,b1]T is column vector
-#y'=1*b0+x*b1=X beta 
-#X=[1 x] in which each 1 and x is a column vector R->nx1
-N=x.shape[0]
-ones_columns=np.ones((N,1))
-X=np.c_[ones_columns,x]
-
-#------------------------------------------------------------------------------------------------
-# beta=(X^T X)^(-1)X^T y
-# e=y-X beta
-# residual sum of square: rss=e^T e
-#------------------------------------------------------------------------------------------------
-
-beta=(np.linalg.inv(X.T@X))@(X.T)@y #2x1
-e=y-X@beta #nx1
-rss=(e.T)@e
-
-print(f"intercept (beta_0) :{float(beta[0,0]):.4f}")
-print(f"slope (beta_1) :{float(beta[1,0]):.4f}")
-print(f"residual sum of square (rss) :{float(rss[0,0]):.4f}")
-
-#--------------------AUTOMATED GRADER-------------------------------------------
-reference_model=LinearRegression()
-reference_model.fit(x,y)
-np.testing.assert_almost_equal(float(beta[0,0]),float(reference_model.intercept_[0]))
-np.testing.assert_almost_equal(float(beta[1,0]),float(reference_model.coef_[0,0]))
-print("\n!!!! Successfull !!!!")
-
 #=============================================CLASS========================================================
 class linear_regression:
     def __init__(self,x,y):
@@ -79,6 +43,43 @@ class linear_regression:
         print(f"RSS: {self.rss():.4f}")
 
 #==========================================================================================================================
+
+#raw data
+x=np.array([[1],
+            [2],
+            [3]])
+y=np.array([[2],
+            [3],
+            [6]])
+#beta=[b0,b1]T is column vector
+#y'=1*b0+x*b1=X beta 
+#X=[1 x] in which each 1 and x is a column vector R->nx1
+N=x.shape[0]
+ones_columns=np.ones((N,1))
+X=np.c_[ones_columns,x]
+
+#------------------------------------------------------------------------------------------------
+# beta=(X^T X)^(-1)X^T y
+# e=y-X beta
+# residual sum of square: rss=e^T e
+#------------------------------------------------------------------------------------------------
+
+beta=(np.linalg.inv(X.T@X))@(X.T)@y #2x1
+e=y-X@beta #nx1
+rss=(e.T)@e
+
+print(f"intercept (beta_0) :{float(beta[0,0]):.4f}")
+print(f"slope (beta_1) :{float(beta[1,0]):.4f}")
+print(f"residual sum of square (rss) :{float(rss[0,0]):.4f}")
+
+#--------------------AUTOMATED GRADER-------------------------------------------
+reference_model=LinearRegression()
+reference_model.fit(x,y)
+np.testing.assert_almost_equal(float(beta[0,0]),float(reference_model.intercept_[0]))
+np.testing.assert_almost_equal(float(beta[1,0]),float(reference_model.coef_[0,0]))
+print("\n!!!! Successfull !!!!")
+
+
 
 x1 = [[1,2],[3,4],[3,6]]
 y1 = [2,3,6]
