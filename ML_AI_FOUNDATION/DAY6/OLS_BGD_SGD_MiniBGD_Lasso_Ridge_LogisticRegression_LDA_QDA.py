@@ -301,3 +301,166 @@ class linear_regression:
         pred_ours=self.predict(X)
         mse=np.mean((pred_sklearn-pred_ours)**2)
         print("Prediction MSE =",mse)
+
+
+#================================================================================================
+#================================================================================================
+#================================================================================================
+#================================================================================================
+# Locally Weighted Linear Regression (LWLR)
+#------------------------------------------------------------------------------------------------
+# Lazy learning algorithm:
+# For every query point x_c, a new linear regression model
+# is fitted using weights determined by the distance from x_c.
+#
+# Nearby points:
+#       large weights
+#
+# Distant points:
+#       small weights
+#
+# Gaussian Kernel:
+#
+# w_i = exp(||x_i - x_c||²/-2σ²)
+#       
+# Weighted Normal Equation:
+#
+# β = (XᵀWX)^+ XᵀWy
+#
+# Prediction:
+#
+# ŷ_c = x_c β
+#
+# σ controls locality:
+#
+# Small σ  -> highly local fit (high variance)
+# Large σ  -> smoother/global fit
+# σ → ∞    -> Ordinary Least Squares
+#
+# Complexity:
+# A new β is computed for every prediction.
+# Training cost is almost zero.
+# Prediction is expensive.
+#================================================================================================
+#================================================================================================
+#================================================================================================
+#================================================================================================
+
+class LWLR:
+    def __init__(self,X,y):
+        self.x=np.array(X)
+        if self.x.ndim==1:
+            self.x=self.x.reshape(-1,1)
+        self.y=np.array(y).reshape(-1,1)
+        self.m,self.n=self.x.shape
+        self.d=self.n+1
+        intecept_column_one=np.ones((self.m,1))
+        self.x=np.c_[intecept_column_one,self.x]
+        self.W=np.eye(self.m)
+        self.beta=np.zeros((self.d,1))
+
+    def sample_weighted(self,x_c,sigma):
+        x_c=np.array(x_c).reshape(1,-1)
+        diff=self.x[:,1:]-x_c
+        dist_sq=np.sum(diff**2,axis=1)
+        self.W=np.diag(np.exp(-dist_sq/(2*sigma**2)))
+
+    def predict(self,x_c,sigma=1):
+        self.sample_weighted(x_c,sigma)
+        x_c=np.array(x_c).reshape(1,-1)
+        x_c=np.c_[np.ones((1,1)),x_c]
+        self.beta=np.linalg.pinv(self.x.T@self.W@self.x)@self.x.T@self.W@self.y
+        y_c=x_c@self.beta
+        print(f"locally apply linear regression on {x_c}\n to get solution {y_c}.\n")
+        return float(y_c)
+
+
+#================================================================================================
+#================================================================================================
+#================================================================================================
+#================================================================================================
+#Logistic Regression
+
+#================================================================================================
+#================================================================================================
+#================================================================================================
+#================================================================================================
+
+#bernolli k=2 classes
+#methord->newton,bgd,sgd,mini_bgd
+#L2(ridge),unregularize
+# k classes genral ->softmax
+
+class logistic_regression:
+    def __init__(self,penalty=None,
+                lamb=None,
+                solver="normal",binary=False):
+        self.solver=solver
+        self.lamb=lamb
+        self.penalty=penalty
+        self.beta=None
+        self.binary=binary
+        self.mu=None
+        self.std=None
+        self.diag_l=None
+        self.W=None
+
+    def prepare_data(self,X,y):
+        x=np.array(X)
+        if x.ndim==1:
+            x=x.reshape(-1,1)
+        y=np.array(y).reshape(-1,1)
+        m,n=x.shape
+        intecept_column_one=np.ones((m,1))
+        x=np.c_[intecept_column_one,x]
+        d=n+1
+        self.diag_l=np.eye(d)
+        self.diag_l[0,0]=0
+        self.mu=np.zeros((1,n))
+        self.std=np.ones((1,n))
+        return x,y,m,d
+
+    def centralize_and_normalize_data(self,X,y):
+        x=np.array(X)
+        if x.ndim==1:
+            x=x.reshape(-1,1)
+        y=np.array(y).reshape(-1,1)
+        m,n=x.shape
+        mu_col=np.mean(x,axis=0,keepdims=True)
+        self.mu=mu_col
+        x=x-mu_col
+        sigma_col=np.std(x,axis=0,keepdims=True)
+        sigma_col[sigma_col==0]=1
+        self.std=sigma_col
+        x=x/sigma_col
+        intecept_column_one=np.ones((m,1))#we don't normalize the intecept else our y_i also changes since beta_0=sum(y_i)/m fix
+        x=np.c_[intecept_column_one,x]
+        d=n+1
+        self.diag_l=np.eye(d)
+        self.diag_l[0,0]=0
+        return x,y,m,d
+
+    def sigmoid_function(self,z):
+        z=np.clip(z,-700,700)
+        return 1/(1+np.exp(-z))
+
+    def compute_gradient(self,x,y):
+        x=np.array(x)
+        if x.ndim==1:
+            x=x.reshape(-1,1)
+        y=np.array(y).reshape(-1,1)
+        m,d=x.shape
+        if self.penalty=="l2":
+            return 1/m*x.T@(self.sigmoid_function(x@self.beta)-y)+self.lamb*self.diag_l@self.beta
+        return 1/m*x.T@(self.sigmoid_function(x@self.beta)-y)
+
+    def compute_hessian(self,x):
+        x=np.array(x)
+        if x.ndim==1:
+            x=x.reshape(-1,1)
+        m,d=x.shape
+        p=self.sigmoid_function(x@self.beta)
+        self.W=np.diag((p*(1-p)).ravel())
+        if self.penalty=="l2":
+            return 1/m*x.T@self.W@x+self.lamb*self.diag_l
+        return 1/m*x.T@self.W@x
