@@ -18,6 +18,13 @@ class linear_regression:
         self.penality=penality
         self.beta=None
 
+    def normal_methord(self,X,y):
+        x=np.array(X)
+        if x.ndim==1:
+            x=np.reshape(-1,1)
+        y=np.array(y).reshape(-1,1)
+        m,n=x.shape
+        
     def fit_methord(self):
         if self.solver=="normal":
             pass
